@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "btech-runtime-security"
+version = "0.1.0"
+description = "Behavioral runtime security research scaffolding"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "langgraph>=1,<2",
+  "langchain-core>=1,<2",
+  "langchain-openai>=1,<2",
+  "pydantic>=2,<3",
+  "python-dotenv>=1,<2",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8,<10", "ruff>=0.14,<1"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
