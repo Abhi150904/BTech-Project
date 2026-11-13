@@ -34,7 +34,7 @@ def main(argv: list[str] | None = None) -> int:
         for call in result.tool_calls:
             response = responses.get(call.call_id)
             status = response.status if response else "no response"
-            print(f"- {call.tool_name}({call.arguments}) [{status}]")
+            print(f"- {call.tool_name} [{status}]")
     return 0
 
 

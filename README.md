@@ -17,9 +17,9 @@ python -m pip install -e ".[dev]"
 Copy-Item .env.example .env
 ```
 
-Set `OPENAI_API_KEY` in `.env`; optionally set `OPENAI_MODEL` to choose a model.
-The agent defaults to `gpt-4o-mini` when `OPENAI_MODEL` is unset. Agent runs use
-the OpenAI API; tests use mocked model responses and do not need a key.
+Set `OPENAI_API_KEY` in `.env`. The example selects `gpt-4.1-mini`; change
+`OPENAI_MODEL` there to choose another model. Agent runs use the OpenAI API;
+tests use mocked model responses and do not need a key.
 
 ## Run the CLI
 
