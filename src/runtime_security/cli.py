@@ -2,16 +2,19 @@
 
 import argparse
 import sys
+from pathlib import Path
 from uuid import uuid4
 
 from runtime_security.agent import LangGraphAgent
 from runtime_security.contracts import AgentRequest
+from runtime_security.telemetry.recorder import JsonlRecorder
 from runtime_security.tools import SandboxToolRegistry
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Run the runtime security research agent.")
     parser.add_argument("prompt", help="Task to give the agent")
+    parser.add_argument("--telemetry", type=Path, help="Append sanitized audit events to JSONL")
     parser.add_argument(
         "--max-steps", type=int, default=10, help="Maximum model/tool cycles (default: 10)"
     )
@@ -20,7 +23,8 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("--max-steps must be at least 1")
 
     try:
-        result = LangGraphAgent(SandboxToolRegistry()).invoke(
+        options = {"recorder": JsonlRecorder(args.telemetry)} if args.telemetry else {}
+        result = LangGraphAgent(SandboxToolRegistry(), **options).invoke(
             AgentRequest(run_id=str(uuid4()), prompt=args.prompt, max_steps=args.max_steps)
         )
     except Exception as exc:
@@ -28,6 +32,8 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     print(result.final_answer)
+    if args.telemetry:
+        print(f"Telemetry run ID: {result.run_id}")
     if result.tool_calls:
         print("\nTool calls:")
         responses = {response.call_id: response for response in result.tool_responses}
