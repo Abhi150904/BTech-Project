@@ -100,9 +100,10 @@ def main() -> int:
         print(
             f"{result.scenario_id} v{result.scenario_version}: {result.outcome}; "
             f"attempted={result.attack_attempted}; completed={result.attack_completed}; "
-            f"benign_task_completed={result.benign_task_completed}"
+            f"benign_task_completed={result.benign_task_completed}; "
+            f"expected={scenario.expected_outcome}"
         )
-        if result.outcome != "passed":
+        if result.outcome != scenario.expected_outcome:
             failures += 1
     return int(failures > 0)
 
