@@ -19,6 +19,9 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest>=8,<10", "ruff>=0.14,<1"]
 
+[project.scripts]
+runtime-security = "runtime_security.cli:main"
+
 [tool.setuptools.packages.find]
 where = ["src"]
 

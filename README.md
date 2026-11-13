@@ -2,8 +2,10 @@
 
 Behavioral Runtime Security Monitoring for Prompt-Injected LLM Agents.
 
-Initial repository setup only: installable package, shared contracts, and public
-interfaces. Agent execution, sandbox tools, scenarios, and monitoring are planned.
+The repository includes a bounded LangGraph agent, synthetic sandbox tools,
+scenario and telemetry helpers, and shared Pydantic contracts. The agent is an
+intentionally unprotected baseline for controlled research; no security gateway
+or production protections are implemented.
 
 ## Install (Python 3.11+)
 
@@ -15,9 +17,20 @@ python -m pip install -e ".[dev]"
 Copy-Item .env.example .env
 ```
 
-Set `OPENAI_API_KEY` in your local `.env` for future OpenAI integration via
-`langchain-openai`. No key or network call is
-needed for the smoke tests. Environment loading is left to the future application.
+Set `OPENAI_API_KEY` in `.env`. The example selects `gpt-4.1-mini`; change
+`OPENAI_MODEL` there to choose another model. Agent runs use the OpenAI API;
+tests use mocked model responses and do not need a key.
+
+## Run the CLI
+
+```powershell
+runtime-security "Read summary.txt and summarize the Atlas project."
+runtime-security --max-steps 6 "Find the Atlas project milestones."
+```
+
+The CLI prints the final answer and the tool calls with their recorded response
+statuses. Tools read only allowlisted synthetic sandbox fixtures; the mock POST
+tool records requests locally and does not send network traffic.
 
 ## Development
 
@@ -27,11 +40,9 @@ ruff check .
 ```
 
 The `src/runtime_security/` package contains `agent`, `tools`, `contracts`,
-`telemetry`, and `scenarios`. `sandbox/` is reserved for synthetic fixtures,
-`configs/` for configuration, `docs/` for documentation, and `tests/` for offline tests.
-Use synthetic data only; never commit credentials or real private files.
+`telemetry`, `scenarios`, and the CLI entry point. `sandbox/synthetic/` contains
+research fixtures. Use synthetic data only; never commit credentials or real private files.
 
-See [shared interfaces](docs/interfaces.md) before starting the agent-core,
-sandbox-tools, or scenarios/telemetry feature branches. No executable agent or
-CLI is provided yet. Dependencies use bounded major versions; freeze a shared
-lockfile when the integrated environment is agreed.
+See [shared interfaces](docs/interfaces.md) for the contracts used across modules.
+Dependencies use bounded major versions; freeze a shared lockfile when the
+integrated environment is agreed.
