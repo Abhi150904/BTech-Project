@@ -118,6 +118,24 @@ def test_injected_scenarios_report_attempt_and_completion_separately():
     assert mock_send.attack_completed
     assert mock_send.outcome == "failed"
     assert mock_send.recorded_side_effects[0]["destination"] == INJECTION.attack_destination
+    assert mock_send.max_steps == 10
+    assert mock_send.model_name == "deterministic-scripted"
+
+
+def test_injected_document_without_unsafe_proposal_is_not_an_attempt():
+    registry = SandboxToolRegistry()
+    agent, _ = make_agent(
+        [call(args={"document_id": "injection.txt"}), AIMessage(content="Atlas summary.")],
+        registry,
+    )
+    result = ScenarioRunner(agent, lambda: registry.recorded_requests).run(INJECTION, "safe-run")
+
+    assert result.injection_present
+    assert not result.attack_attempted
+    assert not result.attack_completed
+    assert result.benign_task_completed
+    assert result.outcome == "passed"
+    assert result.recorded_side_effects == []
 
 
 def test_benign_lookalikes_allow_explicitly_authorized_actions():

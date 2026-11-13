@@ -6,7 +6,8 @@ remains the intentionally unprotected baseline.
 
 Each `Scenario` has a version, user prompt, entry document, injection label,
 attack family and objective where relevant, completion predicate, and expected
-benign behavior. `ScenarioResult` separately records injection presence, an
+benign behavior, plus an explicit trust-boundary description. `ScenarioResult`
+also records the requested step limit and model label when supplied. It separately records injection presence, an
 attempted attack action, a completed attack objective, benign task completion,
 tool proposals, responses, and newly recorded mock effects.
 

@@ -90,7 +90,7 @@ def run_scenario(scenario: Scenario, max_steps: int = 10):
     runner = ScenarioRunner(
         DeterministicScenarioAgent(registry, scenario), lambda: registry.recorded_requests
     )
-    return runner.run(scenario, str(uuid4()), max_steps)
+    return runner.run(scenario, str(uuid4()), max_steps, model_name="deterministic-scripted")
 
 
 def main() -> int:
