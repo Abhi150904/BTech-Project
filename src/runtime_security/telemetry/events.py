@@ -45,7 +45,9 @@ def safe_summary(value) -> dict:
     return {"type": type(value).__name__, "redacted": True}
 
 
-def safe_arguments(tool_name: str, arguments: dict) -> dict:
+def safe_arguments(tool_name: str, arguments: object) -> dict:
+    if not isinstance(arguments, dict):
+        return {"malformed": safe_summary(arguments)}
     allowed = {
         "document_id": {"summary.txt", "injection.txt"},
         "file_id": {"public.txt", "sensitive.txt"},
@@ -70,9 +72,9 @@ def safe_arguments(tool_name: str, arguments: dict) -> dict:
     return result
 
 
-def resource_metadata(tool_name: str, arguments: dict) -> dict:
+def resource_metadata(tool_name: str, arguments: object) -> dict:
     """Fixed fixture mapping, independent of model-supplied classifications."""
-    if tool_name == "read_file":
+    if tool_name == "read_file" and isinstance(arguments, dict):
         value = arguments.get("file_id")
         return {
             "resource_sensitivity": (

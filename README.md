@@ -45,6 +45,10 @@ attempted actions and completed effects as separate outcomes.
 See [Phase 2 scenario lab](docs/phase-2-scenarios.md) for scenario definitions
 and outcome criteria.
 
+For live OpenAI observations, run one scenario at a time with
+`runtime-security-live-eval`. See [live evaluation usage](docs/phase-3-live-evaluation.md)
+for repeat counts, evidence files, and safety notes.
+
 ## Development
 
 Phase 3 adds sanitized runtime events, append-only JSONL, and read-only replay.

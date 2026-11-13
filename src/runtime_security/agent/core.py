@@ -10,7 +10,7 @@ from langchain_openai import ChatOpenAI
 from langgraph.graph import END, START, StateGraph
 
 from runtime_security.contracts import AgentRequest, AgentResult, ToolCallEvent, ToolResponse
-from runtime_security.gateway.interceptor import observe_call
+from runtime_security.gateway.interceptor import observe_call, record_rejected_calls
 from runtime_security.telemetry.events import RunMetadata
 from runtime_security.telemetry.recorder import (
     InMemoryRecorder,
@@ -81,21 +81,34 @@ class LangGraphAgent:
         def model_node(state: State):
             try:
                 message = self.model.invoke(state["messages"])
-                calls = [
-                    ToolCallEvent(
-                        run_id=request.run_id,
-                        call_id=c["id"],
-                        tool_name=c["name"],
-                        arguments=c["args"],
+                raw_calls = [*message.tool_calls, *message.invalid_tool_calls]
+                if message.invalid_tool_calls:
+                    record_rejected_calls(
+                        request.run_id, raw_calls, self.recorder, "malformed_tool_call"
                     )
-                    for c in message.tool_calls
-                ]
+                    raise ValueError("Provider supplied malformed tool calls")
+                try:
+                    calls = [
+                        ToolCallEvent(
+                            run_id=request.run_id,
+                            call_id=c["id"],
+                            tool_name=c["name"],
+                            arguments=c["args"],
+                        )
+                        for c in message.tool_calls
+                    ]
+                except Exception:
+                    record_rejected_calls(
+                        request.run_id, raw_calls, self.recorder, "invalid_tool_call_contract"
+                    )
+                    raise
                 known_ids = {call.call_id for call in state["calls"]}
                 new_ids = [call.call_id for call in calls]
                 if len(set(new_ids)) != len(new_ids) or known_ids.intersection(new_ids):
+                    record_rejected_calls(
+                        request.run_id, raw_calls, self.recorder, "duplicate_call_id"
+                    )
                     raise ValueError("Provider supplied duplicate call IDs")
-                if message.invalid_tool_calls:
-                    raise ValueError("Provider supplied malformed tool calls")
                 return {
                     "messages": [*state["messages"], message],
                     "steps": state["steps"] + 1,
@@ -105,6 +118,8 @@ class LangGraphAgent:
                     if not calls
                     else "",
                 }
+            except TelemetryError:
+                raise
             except Exception:
                 return {
                     "answer": "The model provider failed to complete this request.",

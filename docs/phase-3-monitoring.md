@@ -24,6 +24,11 @@ ALLOW verdict. The telemetry recorder never invokes tools. The wrapper delegates
 to the existing executor and returns its real result unchanged. Executor errors
 and mismatched call IDs become paired error responses as in Phase 2.
 
+Provider tool calls rejected before execution are also recorded as proposal,
+protocol-validation decision, and error-result events with `execution: not_started`.
+Those events use generated call IDs and sanitized arguments; provider-supplied
+call IDs and malformed raw argument strings are not copied into telemetry.
+
 LangGraphAgent uses an in-memory recorder by default, exposed as `agent.recorder`.
 The deterministic scenario adapter uses the same wrapper. ScenarioRunner passes
 run metadata through a scoped ContextVar which resets on exit; labels are never
