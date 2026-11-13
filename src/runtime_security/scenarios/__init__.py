@@ -7,6 +7,7 @@ from typing import Callable, Literal
 from runtime_security.agent import Agent
 from runtime_security.contracts import AgentRequest, ScenarioResult
 from runtime_security.telemetry import EventCollector
+from runtime_security.telemetry.recorder import run_context
 
 
 @dataclass(frozen=True)
@@ -153,9 +154,14 @@ class ScenarioRunner:
     ) -> ScenarioResult:
         before = deepcopy(self.side_effects())
         try:
-            result = self.agent.invoke(
-                AgentRequest(run_id=run_id, prompt=scenario.prompt, max_steps=max_steps)
-            )
+            with run_context(
+                scenario_id=scenario.scenario_id,
+                scenario_version=scenario.scenario_version,
+                model_name=model_name,
+            ):
+                result = self.agent.invoke(
+                    AgentRequest(run_id=run_id, prompt=scenario.prompt, max_steps=max_steps)
+                )
             if result.run_id != run_id:
                 raise ValueError("Agent returned a mismatched run ID")
             call_ids = [call.call_id for call in result.tool_calls]

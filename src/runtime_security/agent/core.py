@@ -10,6 +10,14 @@ from langchain_openai import ChatOpenAI
 from langgraph.graph import END, START, StateGraph
 
 from runtime_security.contracts import AgentRequest, AgentResult, ToolCallEvent, ToolResponse
+from runtime_security.gateway.interceptor import observe_call
+from runtime_security.telemetry.events import RunMetadata
+from runtime_security.telemetry.recorder import (
+    InMemoryRecorder,
+    TelemetryError,
+    completion_status,
+    current_metadata,
+)
 from runtime_security.tools import ToolRegistry
 
 
@@ -41,7 +49,13 @@ class State(TypedDict):
 
 
 class LangGraphAgent:
-    def __init__(self, registry: ToolRegistry, model=None, executor: ToolExecutor | None = None):
+    def __init__(
+        self,
+        registry: ToolRegistry,
+        model=None,
+        executor: ToolExecutor | None = None,
+        recorder=None,
+    ):
         tools = list(registry.get_tools())
         if model is None:
             load_dotenv()
@@ -51,8 +65,19 @@ class LangGraphAgent:
             )
         self.model = model.bind_tools(tools)
         self.executor = executor or RegistryExecutor(tools)
+        self.recorder = recorder if recorder is not None else InMemoryRecorder()
+        self.model_name = getattr(model, "model_name", None)
+        if not isinstance(self.model_name, str):
+            self.model_name = None
 
     def invoke(self, request: AgentRequest) -> AgentResult:
+        metadata = current_metadata()
+        if metadata.get("model_name") is None:
+            metadata["model_name"] = self.model_name
+        self.recorder.start_run(
+            request.run_id, RunMetadata(max_steps=request.max_steps, **metadata)
+        )
+
         def model_node(state: State):
             try:
                 message = self.model.invoke(state["messages"])
@@ -91,14 +116,7 @@ class LangGraphAgent:
             responses = []
             messages = []
             for call in state["pending"]:
-                try:
-                    response = self.executor.execute(call)
-                    if response.call_id != call.call_id:
-                        raise ValueError("Executor returned a mismatched call ID")
-                except Exception as exc:
-                    response = ToolResponse(
-                        call_id=call.call_id, status="error", error=str(exc) or type(exc).__name__
-                    )
+                response = observe_call(call, self.executor.execute, self.recorder)
                 responses.append(response)
                 messages.append(
                     ToolMessage(
@@ -119,16 +137,29 @@ class LangGraphAgent:
         graph.add_conditional_edges(
             "execute", lambda s: "model" if s["steps"] < request.max_steps else END
         )
-        result = graph.compile().invoke(
-            State(
-                messages=[HumanMessage(content=request.prompt)],
-                steps=0,
-                calls=[],
-                responses=[],
-                pending=[],
-                answer="",
-            ),
-            {"recursion_limit": request.max_steps * 2 + 2},
+        try:
+            result = graph.compile().invoke(
+                State(
+                    messages=[HumanMessage(content=request.prompt)],
+                    steps=0,
+                    calls=[],
+                    responses=[],
+                    pending=[],
+                    answer="",
+                ),
+                {"recursion_limit": request.max_steps * 2 + 2},
+            )
+        except TelemetryError:
+            raise
+        except Exception:
+            self.recorder.record(
+                request.run_id, "run_complete", summary={"status": "execution_error"}
+            )
+            raise
+        self.recorder.record(
+            request.run_id,
+            "run_complete",
+            summary={"status": completion_status(result["answer"]), "steps": result["steps"]},
         )
         return AgentResult(
             run_id=request.run_id,

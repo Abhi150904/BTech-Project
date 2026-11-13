@@ -22,6 +22,7 @@ dev = ["pytest>=8,<10", "ruff>=0.14,<1"]
 [project.scripts]
 runtime-security = "runtime_security.cli:main"
 runtime-security-scenarios = "runtime_security.scenarios.lab:main"
+runtime-security-replay = "runtime_security.telemetry.replay:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

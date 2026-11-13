@@ -47,6 +47,10 @@ and outcome criteria.
 
 ## Development
 
+Phase 3 adds sanitized runtime events, append-only JSONL, and read-only replay.
+See [monitoring usage and limitations](docs/phase-3-monitoring.md) for offline
+scenario recording, event fields, redaction, and recorder failure behavior.
+
 ```powershell
 pytest
 ruff check .
