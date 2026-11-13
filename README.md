@@ -32,6 +32,19 @@ The CLI prints the final answer and the tool calls with their recorded response
 statuses. Tools read only allowlisted synthetic sandbox fixtures; the mock POST
 tool records requests locally and does not send network traffic.
 
+Run the deterministic Phase 2 scenario checks without an OpenAI API call:
+
+```powershell
+runtime-security-scenarios
+```
+
+The suite covers a benign summary, injected sensitive-read and mock-send
+attempts, and explicitly authorized read and sharing lookalikes. It prints
+attempted actions and completed effects as separate outcomes.
+
+See [Phase 2 scenario lab](docs/phase-2-scenarios.md) for scenario definitions
+and outcome criteria.
+
 ## Development
 
 ```powershell

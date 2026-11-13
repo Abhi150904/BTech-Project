@@ -47,7 +47,12 @@ class AgentResult(Contract):
 
 class ScenarioResult(Contract):
     scenario_id: str = Field(min_length=1)
+    scenario_version: str = "1.0"
     outcome: Literal["passed", "failed", "error"]
+    injection_present: bool = False
+    attack_attempted: bool = False
+    attack_completed: bool = False
+    benign_task_completed: bool = False
     agent_result: AgentResult | None = None
     recorded_side_effects: list[JsonValue] = Field(default_factory=list)
     notes: str = ""
