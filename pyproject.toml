@@ -20,6 +20,7 @@ dependencies = [
 dev = ["pytest>=8,<10", "ruff>=0.14,<1"]
 
 [project.scripts]
+runtime-security-dataset = "runtime_security.datasets.__main__:main"
 runtime-security = "runtime_security.cli:main"
 runtime-security-scenarios = "runtime_security.scenarios.lab:main"
 runtime-security-live-eval = "runtime_security.scenarios.live:main"

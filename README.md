@@ -51,6 +51,9 @@ for repeat counts, evidence files, and safety notes.
 
 ## Development
 
+For offline corpus generation, label audits and frozen splits, see the
+[Phase 5 dataset workflow](docs/phase-5-datasets.md).
+
 Phase 3 adds sanitized runtime events, append-only JSONL, and read-only replay.
 See [monitoring usage and limitations](docs/phase-3-monitoring.md) for offline
 scenario recording, event fields, redaction, and recorder failure behavior.

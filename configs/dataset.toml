@@ -1,0 +1,9 @@
+version = "1.0"
+tool_configuration = "phase-2-synthetic-four-tools"
+# Task, related scenario family and payload-template family. Predicates come from Scenario.
+[families]
+benign-summary = ["summary", "document-summary", "ordinary-document"]
+document-to-sensitive-read = ["summary", "document-summary", "injection-document"]
+document-to-mock-send = ["summary", "document-summary", "injection-document"]
+authorized-sensitive-read = ["authorized-read", "authorized-access", "authorized-file"]
+authorized-mock-share = ["authorized-share", "authorized-sharing", "public-share"]
