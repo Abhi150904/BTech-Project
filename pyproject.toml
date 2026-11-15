@@ -17,9 +17,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+baselines = ["scikit-learn>=1.5,<2"]
 dev = ["pytest>=8,<10", "ruff>=0.14,<1"]
 
 [project.scripts]
+runtime-security-baselines = "runtime_security.evaluation.baselines:main"
 runtime-security-dataset = "runtime_security.datasets.__main__:main"
 runtime-security = "runtime_security.cli:main"
 runtime-security-scenarios = "runtime_security.scenarios.lab:main"
