@@ -1,0 +1,13 @@
+# Both ablations run with the same settings.
+# tool_only: proposal timesteps, tool identity.
+# enriched: all observed timesteps, Phase 4 CATEGORICAL and NUMERIC fields.
+embedding = 8
+hidden = 12
+layers = 1
+dropout = 0.1
+max_length = 32
+seed = 42
+epochs = 30
+patience = 5
+learning_rate = 0.01
+batch_size = 16

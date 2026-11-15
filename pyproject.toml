@@ -17,10 +17,13 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+neural = ["torch>=2.5,<3"]
 baselines = ["scikit-learn>=1.5,<2"]
 dev = ["pytest>=8,<10", "ruff>=0.14,<1"]
 
 [project.scripts]
+runtime-security-train = "runtime_security.detectors.train:main"
+runtime-security-score = "runtime_security.detectors.inference:main"
 runtime-security-baselines = "runtime_security.evaluation.baselines:main"
 runtime-security-dataset = "runtime_security.datasets.__main__:main"
 runtime-security = "runtime_security.cli:main"

@@ -51,6 +51,9 @@ for repeat counts, evidence files, and safety notes.
 
 ## Development
 
+Train the two offline sequence detectors or score a pending tool proposal with
+the [Phase 7 BiLSTM workflow](docs/phase-7-bilstm.md).
+
 For rule, sequence and conventional ML comparisons on a frozen dataset, see
 the [Phase 6 baseline workflow](docs/phase-6-baselines.md).
 
