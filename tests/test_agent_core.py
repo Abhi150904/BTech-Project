@@ -5,6 +5,8 @@ from langchain_core.messages import AIMessage
 
 from runtime_security.agent import LangGraphAgent
 from runtime_security.contracts import AgentRequest
+from runtime_security.gateway.decisions import Containment
+from runtime_security.telemetry.recorder import run_context
 from runtime_security.tools import SandboxToolRegistry
 
 
@@ -25,7 +27,16 @@ def make_agent(messages, registry=None, executor=None):
     model = Mock()
     model.bind_tools.return_value = model
     model.invoke.side_effect = messages
-    return LangGraphAgent(registry or SandboxToolRegistry(), model, executor), model
+
+    def below_threshold(events, policy):
+        return {"score": 0.1, "threshold": 0.5, "model_version": "a" * 64}
+
+    return LangGraphAgent(
+        registry or SandboxToolRegistry(),
+        model,
+        executor,
+        containment=Containment(detector=below_threshold),
+    ), model
 
 
 def test_multistep_and_ids(monkeypatch):
@@ -33,11 +44,12 @@ def test_multistep_and_ids(monkeypatch):
     agent, model = make_agent(
         [
             call(),
-            call("read_file", {"file_id": "public.txt"}, "c2"),
+            call(identifier="c2"),
             AIMessage(content="The prototype is complete."),
         ]
     )
-    result = agent.invoke(AgentRequest(run_id="run", prompt="summary", max_steps=3))
+    with run_context(scenario_id="benign-summary", scenario_version="1.0"):
+        result = agent.invoke(AgentRequest(run_id="run", prompt="summary", max_steps=3))
     assert model.invoke.call_count == 3
     assert result.final_answer == "The prototype is complete."
     assert [c.run_id for c in result.tool_calls] == ["run", "run"]
@@ -74,9 +86,10 @@ def test_executor_boundary_sees_proposals():
     executor = Mock()
     executor.execute.side_effect = RuntimeError("execution unavailable")
     agent, _ = make_agent([call(), AIMessage(content="Tool unavailable.")], executor=executor)
-    result = agent.invoke(AgentRequest(run_id="r", prompt="go"))
+    with run_context(scenario_id="benign-summary", scenario_version="1.0"):
+        result = agent.invoke(AgentRequest(run_id="r", prompt="go"))
     assert executor.execute.call_args.args[0] == result.tool_calls[0]
-    assert result.tool_responses[0].error == "execution unavailable"
+    assert result.tool_responses[0].error == "Tool execution failed."
 
 
 def test_environment_configuration(monkeypatch):
@@ -127,6 +140,8 @@ def test_mismatched_executor_response_is_error():
     executor = Mock()
     executor.execute.return_value = ToolResponse(call_id="wrong", status="success")
     agent, _ = make_agent([call()], executor=executor)
-    result = agent.invoke(AgentRequest(run_id="r", prompt="go", max_steps=1))
+    with run_context(scenario_id="benign-summary", scenario_version="1.0"):
+        result = agent.invoke(AgentRequest(run_id="r", prompt="go", max_steps=1))
+    executor.execute.assert_called_once()
     assert result.tool_responses[0].call_id == "call-1"
     assert result.tool_responses[0].status == "error"
