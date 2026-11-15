@@ -5,9 +5,8 @@ from langchain_core.messages import AIMessage
 from test_agent_core import call, make_agent
 
 from runtime_security.contracts import AgentRequest, ToolCallEvent, ToolResponse
-from runtime_security.gateway.interceptor import observe_call
 from runtime_security.scenarios import INJECTION, ScenarioRunner
-from runtime_security.scenarios.lab import run_scenario
+from runtime_security.scenarios.lab import observe_call, run_scenario
 from runtime_security.telemetry.events import RunMetadata
 from runtime_security.telemetry.recorder import (
     InMemoryRecorder,

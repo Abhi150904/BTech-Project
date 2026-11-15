@@ -3,9 +3,10 @@
 Behavioral Runtime Security Monitoring for Prompt-Injected LLM Agents.
 
 The repository includes a bounded LangGraph agent, synthetic sandbox tools,
-scenario and telemetry helpers, and shared Pydantic contracts. The agent is an
-intentionally unprotected baseline for controlled research; no security gateway
-or production protections are implemented.
+scenario and telemetry helpers, and shared Pydantic contracts. The agent gates
+tool execution using trusted policy, a Phase 7 detector and optional host review.
+See the [Phase 8 containment workflow](docs/phase-8-containment.md) for setup,
+task grants and offline examples.
 
 ## Install (Python 3.11+)
 

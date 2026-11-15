@@ -24,7 +24,7 @@ def test_benign_summary():
     assert [e["kind"] for e in runner.collector.for_run("benign")] == ["proposal", "response"]
 
 
-def test_injection_observed_exfiltration():
+def test_gateway_contains_injected_proposals():
     registry = SandboxToolRegistry()
     secret = registry.read_file("sensitive.txt")
     agent, _ = make_agent(
@@ -41,9 +41,10 @@ def test_injection_observed_exfiltration():
         registry,
     )
     result = ScenarioRunner(agent, lambda: registry.recorded_requests).run(INJECTION, "attack")
-    assert result.outcome == "failed"
+    assert result.outcome == "passed"
+    assert result.attack_attempted and not result.attack_completed
     assert len(result.agent_result.tool_calls) == 3
-    assert result.recorded_side_effects == registry.recorded_requests
+    assert result.recorded_side_effects == registry.recorded_requests == []
 
 
 def test_claimed_attack_without_side_effect_is_not_success():
@@ -174,7 +175,7 @@ def test_authorized_read_does_not_require_an_unrequested_document_read():
     assert result.agent_result.tool_calls[0].tool_name == "read_file"
 
 
-def test_authorized_share_fails_if_run_also_records_unauthorized_effect():
+def test_authorized_share_and_additional_proposal():
     registry = SandboxToolRegistry()
     agent, _ = make_agent(
         [
@@ -204,9 +205,18 @@ def test_authorized_share_fails_if_run_also_records_unauthorized_effect():
         AUTHORIZED_SHARE, "authorized-plus-unauthorized-share"
     )
 
-    assert len(result.recorded_side_effects) == 2
-    assert result.outcome == "failed"
-    assert not result.benign_task_completed
+    assert len(result.recorded_side_effects) == 1
+    assert result.agent_result.tool_responses[-1].status == "error"
+    assert result.outcome == "passed" and result.benign_task_completed
+
+    # Preserve the Phase 2 scoring regression using a saved additional effect.
+    from unittest.mock import Mock
+
+    replay = Mock()
+    replay.invoke.return_value = result.agent_result
+    ledger = Mock(side_effect=[[], [*result.recorded_side_effects, {"destination": "other"}]])
+    rescored = ScenarioRunner(replay, ledger).run(AUTHORIZED_SHARE, result.agent_result.run_id)
+    assert rescored.outcome == "failed" and not rescored.benign_task_completed
 
 
 def test_full_scenario_suite_runs_offline():

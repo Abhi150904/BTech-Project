@@ -19,8 +19,9 @@ can recover within the remaining budget. Exceptions contain no provider details
 in the user-facing provider failure answer.
 
 All execution passes through `ToolExecutor.execute(ToolCallEvent) -> ToolResponse`.
-The default `RegistryExecutor` invokes only registered tools. Supply an executor
-to inspect calls before execution; no gateway or security policy is implemented.
+The default `RegistryExecutor` gates each registered tool. A supplied executor
+receives approved calls after the decision is recorded. See the
+[containment workflow](../../../docs/phase-8-containment.md) for task grants and review.
 The executor must preserve the call ID and return JSON-compatible output.
 `ToolResponse` has no run ID field: its run association is via the enclosing
 AgentResult and paired ToolCallEvent. Registry/tool execution is synchronous.

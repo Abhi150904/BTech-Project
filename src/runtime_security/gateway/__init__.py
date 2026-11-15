@@ -1,1 +1,1 @@
-"""Observation-only tool boundary. No security decision or enforcement policy."""
+"""Pre-execution policy, detector and trusted review boundary."""

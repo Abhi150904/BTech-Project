@@ -2,8 +2,9 @@
 
 from uuid import uuid4
 
+from runtime_security.agent import RegistryExecutor
 from runtime_security.contracts import AgentRequest, AgentResult, ToolCallEvent, ToolResponse
-from runtime_security.gateway.interceptor import observe_call
+from runtime_security.gateway.interceptor import _execute_recorded, _record_proposal
 from runtime_security.scenarios import (
     AUTHORIZED_READ,
     AUTHORIZED_SHARE,
@@ -24,14 +25,41 @@ from runtime_security.tools import SandboxToolRegistry
 SCENARIOS = (BENIGN, SENSITIVE_READ, INJECTION, AUTHORIZED_READ, AUTHORIZED_SHARE)
 
 
+def observe_call(call, execute, recorder):
+    """Observation control for the historical scripted sandbox experiment."""
+    fields = _record_proposal(call, recorder)
+    recorder.record(
+        call.run_id,
+        "decision",
+        **fields,
+        summary={"mode": "observation", "decision": "not_evaluated"},
+    )
+    return _execute_recorded(call, execute, recorder, fields)
+
+
 class DeterministicScenarioAgent:
     """A scripted agent adapter for exercising scenario predicates offline."""
 
-    def __init__(self, registry: SandboxToolRegistry, scenario: Scenario, recorder=None):
-        self.registry = registry
+    def __init__(
+        self, registry: SandboxToolRegistry, scenario: Scenario, recorder=None, *, containment=None
+    ):
         self.scenario = scenario
-        self.tools = {tool.name: tool for tool in registry.get_tools()}
         self.recorder = recorder if recorder is not None else InMemoryRecorder()
+        if containment is not None:
+            self._execute = RegistryExecutor(
+                registry.get_tools(), recorder=self.recorder, containment=containment
+            ).execute
+        else:
+            tools = {tool.name: tool for tool in registry.get_tools()}
+
+            def baseline(call):
+                return ToolResponse(
+                    call_id=call.call_id,
+                    status="success",
+                    output=tools[call.tool_name].invoke(call.arguments),
+                )
+
+            self._execute = lambda call: observe_call(call, baseline, self.recorder)
 
     def invoke(self, request: AgentRequest) -> AgentResult:
         self.recorder.start_run(
@@ -70,14 +98,7 @@ class DeterministicScenarioAgent:
             )
             calls.append(event)
 
-            def invoke_tool(call):
-                return ToolResponse(
-                    call_id=call.call_id,
-                    status="success",
-                    output=self.tools[call.tool_name].invoke(call.arguments),
-                )
-
-            response = observe_call(event, invoke_tool, self.recorder)
+            response = self._execute(event)
             responses.append(response)
             if response.status == "error":
                 return None
@@ -118,10 +139,11 @@ class DeterministicScenarioAgent:
         return finish(answer_material)
 
 
-def run_scenario(scenario: Scenario, max_steps: int = 10, recorder=None):
+def run_scenario(scenario: Scenario, max_steps: int = 10, recorder=None, *, containment=None):
     registry = SandboxToolRegistry()
     runner = ScenarioRunner(
-        DeterministicScenarioAgent(registry, scenario, recorder), lambda: registry.recorded_requests
+        DeterministicScenarioAgent(registry, scenario, recorder, containment=containment),
+        lambda: registry.recorded_requests,
     )
     return runner.run(scenario, str(uuid4()), max_steps, model_name="deterministic-scripted")
 

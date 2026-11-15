@@ -6,11 +6,13 @@ from typing import Any, Protocol, TypedDict
 
 from dotenv import load_dotenv
 from langchain_core.messages import HumanMessage, ToolMessage
+from langchain_core.utils.function_calling import convert_to_openai_tool
 from langchain_openai import ChatOpenAI
 from langgraph.graph import END, START, StateGraph
 
 from runtime_security.contracts import AgentRequest, AgentResult, ToolCallEvent, ToolResponse
-from runtime_security.gateway.interceptor import observe_call, record_rejected_calls
+from runtime_security.gateway.decisions import Containment
+from runtime_security.gateway.interceptor import enforce_call, record_rejected_calls
 from runtime_security.telemetry.events import RunMetadata
 from runtime_security.telemetry.recorder import (
     InMemoryRecorder,
@@ -26,17 +28,30 @@ class ToolExecutor(Protocol):
 
 
 class RegistryExecutor:
-    def __init__(self, tools):
-        self.tools = {tool.name: tool for tool in tools}
+    """Mandatory boundary for registered tools and host-supplied executors."""
+
+    def __init__(self, tools, *, recorder=None, containment=None, delegate=None):
+        self.__tools = {tool.name: tool for tool in tools}
+        self.__delegate = delegate
+        self.recorder = recorder if recorder is not None else InMemoryRecorder()
+        self.containment = containment if containment is not None else Containment()
 
     def execute(self, call: ToolCallEvent) -> ToolResponse:
-        try:
-            output = self.tools[call.tool_name].invoke(call.arguments)
-            return ToolResponse(call_id=call.call_id, status="success", output=output)
-        except Exception as exc:
-            return ToolResponse(
-                call_id=call.call_id, status="error", error=str(exc) or type(exc).__name__
-            )
+        return enforce_call(
+            call,
+            self.__dispatch,
+            self.recorder,
+            self.containment,
+            registered=call.tool_name in self.__tools,
+        )
+
+    def __dispatch(self, call):
+        tool = self.__tools[call.tool_name]
+        if self.__delegate is not None:
+            return self.__delegate.execute(call)
+        return ToolResponse(
+            call_id=call.call_id, status="success", output=tool.invoke(call.arguments)
+        )
 
 
 class State(TypedDict):
@@ -55,6 +70,8 @@ class LangGraphAgent:
         model=None,
         executor: ToolExecutor | None = None,
         recorder=None,
+        *,
+        containment: Containment | None = None,
     ):
         tools = list(registry.get_tools())
         if model is None:
@@ -63,12 +80,21 @@ class LangGraphAgent:
                 api_key=os.environ.get("OPENAI_API_KEY"),
                 model=os.environ.get("OPENAI_MODEL", "gpt-4o-mini"),
             )
-        self.model = model.bind_tools(tools)
-        self.executor = executor or RegistryExecutor(tools)
-        self.recorder = recorder if recorder is not None else InMemoryRecorder()
+        self.model = model.bind_tools([convert_to_openai_tool(tool) for tool in tools])
+        self._gateway = RegistryExecutor(
+            tools, recorder=recorder, containment=containment, delegate=executor
+        )
         self.model_name = getattr(model, "model_name", None)
         if not isinstance(self.model_name, str):
             self.model_name = None
+
+    @property
+    def recorder(self):
+        return self._gateway.recorder
+
+    @recorder.setter
+    def recorder(self, value):
+        self._gateway.recorder = value
 
     def invoke(self, request: AgentRequest) -> AgentResult:
         metadata = current_metadata()
@@ -131,7 +157,7 @@ class LangGraphAgent:
             responses = []
             messages = []
             for call in state["pending"]:
-                response = observe_call(call, self.executor.execute, self.recorder)
+                response = self._gateway.execute(call)
                 responses.append(response)
                 messages.append(
                     ToolMessage(

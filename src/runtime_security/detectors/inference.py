@@ -70,14 +70,18 @@ def load_checkpoint(path: Path) -> Loaded:
     return Loaded(ck, model.eval(), fingerprint(ck.model_dump()))
 
 
-@torch.inference_mode()
 def score_prefix(loaded: Loaded, events: list[TrajectoryEvent], policy_path: Path) -> dict:
+    return score_prefix_data(loaded, events, policy_path.read_bytes())
+
+
+@torch.inference_mode()
+def score_prefix_data(loaded: Loaded, events: list[TrajectoryEvent], data: bytes) -> dict:
+    """Score with the same immutable policy snapshot as the caller's hard rules."""
     if not events or events[-1].kind != "proposal":
         raise ValueError("Prefix must end at a pending proposal")
     if any(e.sequence != i for i, e in enumerate(events, 1)):
         raise ValueError("Prefix must be in contiguous sequence order")
     ck = loaded.checkpoint
-    data = policy_path.read_bytes()
     lf = data.replace(b"\r\n", b"\n")
     if ck.policy_hash not in {sha(data), sha(lf), sha(lf.replace(b"\n", b"\r\n"))}:
         raise ValueError("Feature policy digest mismatch")
