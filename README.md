@@ -51,6 +51,9 @@ for repeat counts, evidence files, and safety notes.
 
 ## Development
 
+For rule, sequence and conventional ML comparisons on a frozen dataset, see
+the [Phase 6 baseline workflow](docs/phase-6-baselines.md).
+
 For offline corpus generation, label audits and frozen splits, see the
 [Phase 5 dataset workflow](docs/phase-5-datasets.md).
 
