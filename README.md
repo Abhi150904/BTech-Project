@@ -52,6 +52,13 @@ for repeat counts, evidence files, and safety notes.
 
 ## Development
 
+Inspect a saved report in the local, read-only
+[Phase 10 results dashboard](docs/phase-10-dashboard.md):
+
+```powershell
+python -m runtime_security.dashboard research/phase9-scripted-v1/report.json
+```
+
 Generate deterministic comparisons from saved labels and predictions with the
 [Phase 9 offline evaluation workflow](docs/phase-9-evaluation.md). Reports include
 coverage, explicit denominators, exclusions and research-evidence limitations.
