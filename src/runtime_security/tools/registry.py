@@ -5,6 +5,8 @@ from pathlib import Path
 from langchain_core.tools import StructuredTool
 from pydantic import BaseModel, ConfigDict, Field
 
+from runtime_security.assets import RESOURCE_ROOT
+
 
 class Input(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
@@ -31,9 +33,7 @@ class SandboxToolRegistry:
     """Construct per run to isolate the in-memory mock request ledger."""
 
     def __init__(self, root: Path | None = None):
-        self.root = (
-            root or Path(__file__).resolve().parents[3] / "sandbox" / "synthetic"
-        ).resolve()
+        self.root = (root or RESOURCE_ROOT / "sandbox/synthetic").resolve()
         self.recorded_requests: list[dict[str, str]] = []
 
     def _read(self, category: str, identifier: str, allowed: set[str]) -> str:

@@ -6,6 +6,7 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
+from runtime_security.assets import resource_path
 from runtime_security.datasets.generate import generate
 from runtime_security.datasets.schema import SECRET, Corpus, write_new
 from runtime_security.datasets.split import split
@@ -19,8 +20,8 @@ def main(argv=None):
     gen.add_argument("--evidence", required=True, type=Path)
     gen.add_argument("--telemetry", required=True, type=Path)
     gen.add_argument("--source", required=True, choices=["live", "scripted"])
-    gen.add_argument("--config", type=Path, default=Path("configs/dataset.toml"))
-    gen.add_argument("--policy", type=Path, default=Path("configs/policy_metadata.toml"))
+    gen.add_argument("--config", type=Path, default=resource_path("configs/dataset.toml"))
+    gen.add_argument("--policy", type=Path, default=resource_path("configs/policy_metadata.toml"))
     gen.add_argument("--out", type=Path, required=True)
     freeze = commands.add_parser("split")
     freeze.add_argument("dataset", type=Path)

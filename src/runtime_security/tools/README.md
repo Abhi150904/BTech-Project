@@ -4,8 +4,9 @@ Construct `SandboxToolRegistry()` from `runtime_security.tools` and consume its
 existing `get_tools()` interface. It returns four LangChain StructuredTools with
 strict Pydantic schemas (unknown arguments are rejected). Registry construction
 does not load credentials. The synthetic root defaults to `sandbox/synthetic`
-in this source checkout. For a packaged deployment, supply `root=Path(...)` with
-the same documents/files layout; fixtures are not installed as package data.
+in this source checkout, or the wheel's bundled `_data/sandbox/synthetic`
+directory after installation. Both are independent of the current directory.
+An explicit `root=Path(...)` still supports the same documents/files layout.
 
 Only `summary.txt` and `injection.txt` document IDs and `public.txt` and
 `sensitive.txt` file IDs are accepted. IDs are exact, case-sensitive allowlist

@@ -11,3 +11,5 @@ build/
 dist/
 artifacts/live-evaluation-*.jsonl
 artifacts/dataset-inputs/
+artifacts/release-checks/
+artifacts/phase9-*.json

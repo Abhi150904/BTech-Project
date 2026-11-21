@@ -1,8 +1,8 @@
 """Trusted proposal-time policy using Phase 4 features and the Phase 6 rules."""
 
 import tomllib
-from pathlib import Path
 
+from runtime_security.assets import RESOURCE_ROOT
 from runtime_security.features import extract_run
 from runtime_security.features.metadata import Policy
 from runtime_security.policies.rules import Decision, evaluate_rules
@@ -15,7 +15,7 @@ SCHEMAS = {
     "search_files": SearchInput,
 }
 
-ROOT = Path(__file__).resolve().parents[3]
+ROOT = RESOURCE_ROOT
 DEFAULT_POLICY = ROOT / "configs/policy_metadata.toml"
 POLICY_VERSION = "phase8-sandbox-v1"
 
