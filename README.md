@@ -1,90 +1,111 @@
-# BTech-Project
+# Behavioral Runtime Security Monitoring for Prompt-Injected LLM Agents
 
-Behavioral Runtime Security Monitoring for Prompt-Injected LLM Agents.
+A BTech research prototype with a bounded LangGraph agent, synthetic tools,
+ordered telemetry, semantic features, offline datasets/baselines/BiLSTM,
+pre-execution containment, evaluation reports and a read-only desktop dashboard.
+The 12-run, three-group scripted corpus is a pipeline fixture. Validation/test
+contain no unsafe proposals; it does not establish detector generalization or
+production security.
 
-The repository includes a bounded LangGraph agent, synthetic sandbox tools,
-scenario and telemetry helpers, and shared Pydantic contracts. The agent gates
-tool execution using trusted policy, a Phase 7 detector and optional host review.
-See the [Phase 8 containment workflow](docs/phase-8-containment.md) for setup,
-task grants and offline examples.
+## Setup
 
-## Install (Python 3.11+)
+Python 3.11+ is declared; Windows x64 with CPython 3.12.10 is the tested handoff
+environment. From a clean checkout, one command creates/reuses `.venv`, installs
+development/build dependencies and checks dependencies:
+
+```powershell
+python scripts/setup.py
+# Include scikit-learn and Torch for all tests, training and protected demos:
+python scripts/setup.py --full
+```
+
+The script applies recorded constraints on Windows/Python 3.12. Other platforms
+resolve declared ranges and require separate validation. Installation can
+download packages; offline runs below need no API key.
+
+For manual installation:
 
 ```powershell
 python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -e .
-python -m pip install -e ".[dev]"
-Copy-Item .env.example .env
+.\.venv\Scripts\python.exe -m pip install -e .
+# Extras: dev (tests/lint), build, baselines (sklearn), neural (Torch)
+.\.venv\Scripts\python.exe -m pip install -e ".[dev,build,baselines,neural]"
 ```
 
-Set `OPENAI_API_KEY` in `.env`. The example selects `gpt-4.1-mini`; change
-`OPENAI_MODEL` there to choose another model. Agent runs use the OpenAI API;
-tests use mocked model responses and do not need a key.
+Core installation supports the deterministic lab, dataset/evaluation commands
+using saved predictions, and dashboard. Training/scoring need their ML extra.
+The pinned containment detector requires `neural`; missing detector support
+fails closed and is not a successful protected demonstration.
 
-## Run the CLI
+## Offline demonstration and validation
 
 ```powershell
-runtime-security "Read summary.txt and summarize the Atlas project."
-runtime-security --max-steps 6 "Find the Atlas project milestones."
+.\.venv\Scripts\runtime-security-scenarios.exe
+# Existing benign and injected scenarios, without versus with the gateway:
+.\.venv\Scripts\python.exe scripts/offline_demo.py
+# Core-only alternative:
+.\.venv\Scripts\python.exe scripts/offline_demo.py --unprotected-only
+.\.venv\Scripts\python.exe -m pytest -q
+.\.venv\Scripts\ruff.exe check .
 ```
 
-The CLI prints the final answer and the tool calls with their recorded response
-statuses. Tools read only allowlisted synthetic sandbox fixtures; the mock POST
-tool records requests locally and does not send network traffic.
+Unprotected injected scenarios intentionally report security failure. The demo
+checks recorded mock effects independently of agent text. Tools read only
+allowlisted synthetic fixtures; `mock_http_post` records an in-memory request
+and never sends network traffic. Protected refusals can leave the legitimate
+task incomplete; security and utility remain separate outcomes.
 
-Run the deterministic Phase 2 scenario checks without an OpenAI API call:
+## Saved evaluation and dashboard
 
 ```powershell
-runtime-security-scenarios
+New-Item -ItemType Directory -Force artifacts | Out-Null
+.\.venv\Scripts\runtime-security-evaluate.exe `
+  research/scripted-v1/dataset.json research/scripted-v1/manifest.json `
+  --baselines research/scripted-v1/baselines.json `
+  --neural research/phase7-scripted-v1/report.json `
+  --config configs/experiments/phase9.toml --out artifacts/phase9-local.json
+.\.venv\Scripts\python.exe -m runtime_security.dashboard artifacts/phase9-local.json --check
+.\.venv\Scripts\python.exe -m runtime_security.dashboard artifacts/phase9-local.json
 ```
 
-The suite covers a benign summary, injected sensitive-read and mock-send
-attempts, and explicitly authorized read and sharing lookalikes. It prints
-attempted actions and completed effects as separate outcomes.
+Choose a new output filename on each evaluation. Tk/display is required for
+the GUI; `--check` is headless. Outside a checkout, pass explicit saved-input
+paths. The wheel includes runtime fixtures/configuration and the pinned gateway
+checkpoint; the sdist includes reviewed research inputs, tests and docs.
 
-See [Phase 2 scenario lab](docs/phase-2-scenarios.md) for scenario definitions
-and outcome criteria.
-
-For live OpenAI observations, run one scenario at a time with
-`runtime-security-live-eval`. See [live evaluation usage](docs/phase-3-live-evaluation.md)
-for repeat counts, evidence files, and safety notes.
-
-## Development
-
-Inspect a saved report in the local, read-only
-[Phase 10 results dashboard](docs/phase-10-dashboard.md):
+## Build and handoff
 
 ```powershell
-python -m runtime_security.dashboard research/phase9-scripted-v1/report.json
+.\.venv\Scripts\python.exe -m build
+.\.venv\Scripts\python.exe scripts/verify_distribution.py `
+  dist/btech_runtime_security-0.1.0-py3-none-any.whl `
+  dist/btech_runtime_security-0.1.0.tar.gz
 ```
 
-Generate deterministic comparisons from saved labels and predictions with the
-[Phase 9 offline evaluation workflow](docs/phase-9-evaluation.md). Reports include
-coverage, explicit denominators, exclusions and research-evidence limitations.
+See [Phase 11 handoff](docs/phase-11-handoff.md) for fresh wheel installation,
+archive checks, actual validation results and platform limits. Builds stay local;
+these commands do not publish a package, release, or service.
 
-Train the two offline sequence detectors or score a pending tool proposal with
-the [Phase 7 BiLSTM workflow](docs/phase-7-bilstm.md).
+## Research and implementation references
 
-For rule, sequence and conventional ML comparisons on a frozen dataset, see
-the [Phase 6 baseline workflow](docs/phase-6-baselines.md).
+- [Methodology/trust boundaries](docs/methodology.md), [results](docs/results.md),
+  and [paper-style write-up](paper/README.md).
+- [Scenarios](docs/phase-2-scenarios.md), [monitoring](docs/phase-3-monitoring.md),
+  [features](docs/phase-4-features.md), [datasets](docs/phase-5-datasets.md).
+- [Baselines](docs/phase-6-baselines.md), [BiLSTM](docs/phase-7-bilstm.md),
+  [containment](docs/phase-8-containment.md), [evaluation](docs/phase-9-evaluation.md),
+  [dashboard](docs/phase-10-dashboard.md), [shared contracts](docs/interfaces.md).
 
-For offline corpus generation, label audits and frozen splits, see the
-[Phase 5 dataset workflow](docs/phase-5-datasets.md).
+## Live use is separate
 
-Phase 3 adds sanitized runtime events, append-only JSONL, and read-only replay.
-See [monitoring usage and limitations](docs/phase-3-monitoring.md) for offline
-scenario recording, event fields, redaction, and recorder failure behavior.
+Only a deliberate live model run needs `.env` and `OPENAI_API_KEY`. Copy
+`.env.example` to `.env` and set `OPENAI_MODEL` when preparing such a run.
+The generic `runtime-security` CLI has no task grants; unresolved tool actions
+are refused/reviewed. Read [live evaluation](docs/phase-3-live-evaluation.md) and
+the containment documentation first. Packaging checks never call OpenAI.
 
-```powershell
-pytest
-ruff check .
-```
-
-The `src/runtime_security/` package contains `agent`, `tools`, `contracts`,
-`telemetry`, `scenarios`, and the CLI entry point. `sandbox/synthetic/` contains
-research fixtures. Use synthetic data only; never commit credentials or real private files.
-
-See [shared interfaces](docs/interfaces.md) for the contracts used across modules.
-Dependencies use bounded major versions; freeze a shared lockfile when the
-integrated environment is agreed.
+Never commit `.env`, API keys, private data, unsanitized live evidence or
+temporary outputs. Keep new reports under ignored `artifacts/phase9-*.json`
+and release checks under `artifacts/release-checks/`; use a new experiment
+directory for new model artifacts. Preserve frozen `research/` provenance.
+The tracked `.env.example` deliberately contains an empty key.

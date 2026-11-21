@@ -1,0 +1,28 @@
+include README.md pyproject.toml setup.py .env.example .gitignore .gitattributes
+include src/runtime_security/tools/README.md
+include configs/dataset.toml configs/model.toml configs/policy_metadata.toml
+include configs/experiments/phase9.toml
+include sandbox/synthetic/documents/summary.txt sandbox/synthetic/documents/injection.txt
+include sandbox/synthetic/files/public.txt sandbox/synthetic/files/sensitive.txt
+include research/scripted-v1/dataset.json research/scripted-v1/manifest.json
+include research/scripted-v1/audit.json research/scripted-v1/baselines.json
+include research/phase7-scripted-v1/enriched.json research/phase7-scripted-v1/tool_only.json
+include research/phase7-scripted-v1/report.json research/phase9-scripted-v1/report.json
+include docs/interfaces.md docs/phase-2-scenarios.md docs/phase-3-monitoring.md
+include docs/phase-3-live-evaluation.md docs/phase-4-features.md docs/phase-5-datasets.md
+include docs/phase-6-baselines.md docs/phase-7-bilstm.md docs/phase-8-containment.md
+include docs/phase-9-evaluation.md docs/phase-10-dashboard.md docs/phase-11-handoff.md
+include docs/methodology.md docs/results.md paper/README.md
+include scripts/setup.py scripts/offline_demo.py scripts/verify_distribution.py
+include scripts/smoke_install.py
+include scripts/record_scripted_dataset.py
+include requirements/windows-py312-tested.txt
+recursive-include tests test_*.py
+prune presentation
+prune artifacts
+prune .venv
+prune .git
+prune .codex
+prune .agents
+prune .aws
+global-exclude __pycache__ *.py[cod] .env .env.local .env.production *.pem *.key

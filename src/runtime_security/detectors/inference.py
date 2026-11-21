@@ -10,6 +10,7 @@ from typing import Literal
 import torch
 from pydantic import Field, model_validator
 
+from runtime_security.assets import resource_path
 from runtime_security.contracts import Contract
 from runtime_security.datasets.schema import Digest, fingerprint, sha
 from runtime_security.detectors.bilstm import AttentionBiLSTM, Config, Preprocessing
@@ -103,7 +104,9 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("checkpoint", type=Path)
     parser.add_argument("prefix", type=Path, help="Single run, JSONL through pending proposal")
-    parser.add_argument("--policy", type=Path, default=Path("configs/policy_metadata.toml"))
+    parser.add_argument(
+        "--policy", type=Path, default=resource_path("configs/policy_metadata.toml")
+    )
     args = parser.parse_args(argv)
     try:
         events = [

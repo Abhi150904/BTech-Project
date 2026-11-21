@@ -14,6 +14,7 @@ from time import perf_counter_ns
 import torch
 from torch.nn import functional as F
 
+from runtime_security.assets import resource_path
 from runtime_security.datasets.schema import Corpus, fingerprint, write_new
 from runtime_security.datasets.validate import audit
 from runtime_security.detectors.bilstm import (
@@ -235,7 +236,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ("corpus", "manifest", "baselines"):
         parser.add_argument(name, type=Path)
-    parser.add_argument("--config", type=Path, default=Path("configs/model.toml"))
+    parser.add_argument("--config", type=Path, default=resource_path("configs/model.toml"))
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args(argv)
     try:

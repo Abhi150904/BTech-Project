@@ -1,0 +1,6 @@
+# The existing checkpoint and frozen corpus bind these exact CRLF policy/config bytes.
+configs/policy_metadata.toml text eol=crlf
+configs/dataset.toml text eol=crlf
+configs/model.toml text eol=lf
+configs/experiments/phase9.toml text eol=lf
+research/** text eol=lf
