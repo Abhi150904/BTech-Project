@@ -52,6 +52,10 @@ for repeat counts, evidence files, and safety notes.
 
 ## Development
 
+Generate deterministic comparisons from saved labels and predictions with the
+[Phase 9 offline evaluation workflow](docs/phase-9-evaluation.md). Reports include
+coverage, explicit denominators, exclusions and research-evidence limitations.
+
 Train the two offline sequence detectors or score a pending tool proposal with
 the [Phase 7 BiLSTM workflow](docs/phase-7-bilstm.md).
 
